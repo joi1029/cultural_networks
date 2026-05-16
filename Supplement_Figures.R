@@ -595,29 +595,17 @@ dev.off()
 
 
 #============================================================================
-# Fig. S4 Variable-PC1 loadings over time
+# Fig. S4 PC1 Eigenvalue over time
 #============================================================================
-load("pca_summary_500bootstrap.saved")
+load("pca_summary_500bootstrap.saved") #load pca_sumary
 
-loading_long <- pca_summary %>%
-  select(year, educ_mean, educ_se, age_mean, age_se, race_mean, race_se,
-         partyid_mean, partyid_se, polviews_mean, polviews_se) %>%
-  pivot_longer(cols = -year, names_to = c("variable", ".value"),
-               names_pattern = "(.+)_(mean|se)") %>%
-  mutate(
-    var_type = ifelse(variable %in% c("partyid", "polviews"), "Political", "Demographic"),
-    variable = case_when(
-      variable == "educ" ~ "Education",
-      variable == "age" ~ "Age",
-      variable == "race" ~ "Race",
-      variable == "partyid" ~ "Party",
-      variable == "polviews" ~ "Ideology",
-      TRUE ~ variable
-    ),
-    variable = factor(variable, levels = c("Party", "Ideology",
-                                           "Education", "Age", "Race"))
-  ) %>%
-  group_by(variable) %>%
+# Fig S3 Eigenvalues over time
+eigen_long <- pca_summary %>%
+  select(year, starts_with("eigenvalue")) %>%
+  pivot_longer(cols = -year, names_to = c("pc", ".value"),
+               names_pattern = "(eigenvalue[12])_(.*)") %>%
+  mutate(pc = ifelse(pc == "eigenvalue1", "PC1", "PC2")) %>%
+  group_by(pc) %>%
   mutate(
     mean_fit = predict(loess(mean ~ year, span = 0.2, na.action = na.exclude)),
     se_fit   = predict(loess(se   ~ year, span = 0.2, na.action = na.exclude)),
@@ -626,55 +614,34 @@ loading_long <- pca_summary %>%
   ) %>%
   ungroup()
 
-p2 <- ggplot(loading_long, aes(x = year, y = mean, color = variable, fill = variable)) +
-  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.12, linewidth = 0, color = NA) +
-  #geom_point(size = 2, alpha = 0.6) +
-  geom_line(data = . %>% filter(!(variable %in% c("Party", "Ideology"))), aes(y = mean_fit), linewidth = 1.2) +
-  geom_line(data = . %>% filter(variable %in% c("Party", "Ideology")), aes(y = mean_fit), linewidth = 1.2) +
-  scale_color_manual(values = c(
-    "Education" = "dark green",
-    "Age" = "#ff7928",
-    "Race" = "#008dff",
-    "Party" = "#d83034",
-    "Ideology" = "#000000"
-  )) +
-  scale_fill_manual(values = c(
-    "Education" = "dark green",
-    "Age" = "#ff7928",
-    "Race" = "#008dff",
-    "Party" = "#d83034",
-    "Ideology" = "#000000"
-  )) +
-  labs(
-    x = "Year",
-    y = expression("PC1 Loadings"),
-    color = ""
-  ) +
-  theme_minimal(base_size = 16, base_family = "Helvetica") +
+p1 <- ggplot(eigen_long, aes(x = year, y = mean, color = pc, fill = pc)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.15, linewidth = 0, color = NA) +
+  geom_point(size = 1, alpha = 0.6) +
+  geom_line(aes(y = mean_fit), linewidth = 0.6) +
+  labs(x = "Year", y = "Eigenvalue", color = "") +
+  scale_color_manual(values = c("PC1" = "#d83034", "PC2" = "#000000")) +
+  scale_fill_manual(values = c("PC1" = "#d83034", "PC2" = "#000000")) +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     legend.position = "bottom",
     legend.title = element_blank(),
-    legend.text = element_text(size = 14, color = "black"),
-    plot.title = element_text(size = 14, face = "bold", hjust = 0),
+    legend.text = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 14, color = "black"),
-    axis.text.x = element_text(size = 14, color = "black"),
-    axis.text.y = element_text(size = 14, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 10, l = 10)
   ) +
-  guides(color = guide_legend(override.aes = list(linewidth = 3), nrow = 2), fill = "none")
-
+  guides(color = guide_legend(override.aes = list(linewidth = 3)), fill = "none")
 
 windows()
-print(p2)
+print(p1)
 
-
+# Save plots
 tiff("plots/figs4.tiff", width = 1500, height = 1200, res = 300, pointsize = 14, compression = "lzw")
-print(p2)
+print(p1)
 dev.off()
-
-# Save data
-save(pca_df_all, pca_summary, file = "pca_network_results_bootstrapped.saved")

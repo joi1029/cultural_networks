@@ -2,7 +2,6 @@
 rm(list=ls())
 
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
-
 library(ggplot2)
 library(grid)
 library(gmodels)
@@ -30,7 +29,7 @@ combined_data <- data.frame(yearlist = yearlist)
 
 #=== DENSITY ===
 measure = "Dens" 
-load(file = paste(measure, "_full.saved", sep=""))
+load(file = paste(measure, "_full_nodemog.saved", sep=""))
 measure_f = get(measure)
 
 # Calculate yearly means and SE
@@ -78,7 +77,8 @@ p1_raw <- ggplot(single_metrics_raw[single_metrics_raw$measure == "Density", ],
              aes(x = yearlist)) +
   geom_ribbon(aes(ymin = smooth - 2*se, ymax = smooth + 2*se),
               alpha = 0.3, fill = "grey50") +
-  geom_line(aes(y = smooth), linewidth = 1, color = "black") +
+  geom_point(aes(y = mean), size = 1, color = "black") +
+  geom_line(aes(y = smooth), linewidth = 0.8, color = "black") +
   scale_y_continuous(expand = expansion(mult = c(0.15, 0.05))) +
   labs(title = "A", x = "", y = "Density") +
   theme_minimal() +
@@ -87,46 +87,49 @@ p1_raw <- ggplot(single_metrics_raw[single_metrics_raw$measure == "Density", ],
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.position = "bottom",
-    plot.title = element_text(size = 16, face = "bold", hjust = 0),        
-    plot.subtitle = element_text(hjust = 0.5, size = 14, color = "black"),     
+    plot.title = element_text(size = 12, face = "bold", hjust = 0),        
+    plot.subtitle = element_text(hjust = 0.5, size = 12, color = "black"),     
     axis.title.x = element_blank(),                   
-    axis.title.y = element_text(size = 16, color = "black"),                   
-    axis.text.x = element_text(size = 16, color = "black"),                    
-    axis.text.y = element_text(size = 16, color = "black"),                    
-    legend.title = element_text(size = 16, color = "black"),                   
-    legend.text = element_text(size = 16, color = "black"),
-    strip.text = element_text(size = 16, color = "black")
+    axis.title.y = element_text(size = 12, color = "black"),                   
+    axis.text.x = element_text(size = 12, color = "black"),                    
+    axis.text.y = element_text(size = 12, color = "black"),                    
+    legend.title = element_text(size = 12, color = "black"),                   
+    legend.text = element_text(size = 12, color = "black"),
+    strip.text = element_text(size = 12, color = "black")
   )
 windows()
 p1_raw
 
+head(kcore_data_raw)
+unique(kcore_data_raw$yearlist)
 # Plot 2: Max K-core (Raw Values)
 p2_raw <- ggplot(kcore_data_raw, aes(x = yearlist)) +
   geom_ribbon(aes(ymin = max_kcore_smooth - 2*max_kcore_se, 
                   ymax = max_kcore_smooth + 2*max_kcore_se),
               alpha = 0.3, fill = "grey50") +
-  geom_line(aes(y = max_kcore_smooth), linewidth = 1, color = "black") +
-  labs(title = "B", x = "", y = "Max K-core") +
+  geom_point(aes(y = max_kcore_mean), size = 1, color = "black") +
+  geom_line(aes(y = max_kcore_smooth), linewidth = 0.8, color = "black") +
+  labs(title = "B", x = "", y = expression("Max " * italic(k) * "-core")) +
   theme_minimal() +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     legend.position = "bottom",
-    plot.title = element_text(size = 16, face = "bold", hjust = 0),        
-    plot.subtitle = element_text(hjust = 0.5, size = 14, color = "black"),     
+    plot.title = element_text(size = 12, face = "bold", hjust = 0),        
+    plot.subtitle = element_text(hjust = 0.5, size = 12, color = "black"),     
     axis.title.x = element_blank(),                   
-    axis.title.y = element_text(size = 16, color = "black"),                   
-    axis.text.x = element_text(size = 16, color = "black"),                    
-    axis.text.y = element_text(size = 16, color = "black"),                    
-    legend.title = element_text(size = 16, color = "black"),                   
-    legend.text = element_text(size = 16, color = "black"),
-    strip.text = element_text(size = 16, color = "black")
+    axis.title.y = element_text(size = 12, color = "black"),                   
+    axis.text.x = element_text(size = 12, color = "black"),                    
+    axis.text.y = element_text(size = 12, color = "black"),                    
+    legend.title = element_text(size = 12, color = "black"),                   
+    legend.text = element_text(size = 12, color = "black"),
+    strip.text = element_text(size = 12, color = "black")
   )
 
-
+library(patchwork)
 # Combine plots (Raw Values)
-combined_plot_raw <- (p1_raw / p2_raw) + 
+combined_plot_raw <- (p1_raw | p2_raw) + 
   plot_annotation(
     theme = theme(
                   axis.text.x = element_blank())
@@ -136,10 +139,11 @@ windows()
 print(combined_plot_raw)
 
 showtext_opts(dpi = 300)
-mypath2 = "plots/fig2_vertical.tiff"
-tiff(file = mypath2, width = 1500, height = 2000, res = 300, pointsize = 10, compression = "lzw") # 16:6 ratio
+mypath2 = "plots/fig2_points.tiff"
+tiff(file = mypath2, width = 2800, height = 1000, res = 300, pointsize = 10, compression = "lzw") # 16:6 ratio
 print(combined_plot_raw)
 dev.off()
+
 
 
 
@@ -150,10 +154,6 @@ library(patchwork)
 library(ggplot2)
 library(scales)
 library(showtext)
-
-# Centrality Timetrend Plots
-setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
-
 
 load("bootstrap_summary_stats_500_0312.RData")
 load("node_metrics_list_500_0312.RData")
@@ -239,22 +239,23 @@ p_betweenness <- summary_long %>%
   filter(metric == "betweenness") %>%
   ggplot(aes(x = year, color = node_type, fill = node_type)) +
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
-  geom_line(aes(y = smooth_mean, group = node), size = 0.8) +
+  geom_point(aes(y = mean, group = node), size = 0.6) +
+  geom_line(aes(y = smooth_mean, group = node), size = 0.6) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
-  theme_minimal(base_size = 14, base_family = "Helvetica") +  
+  theme_minimal(base_size = 10, base_family = "Helvetica") +  
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     legend.position = "right",
     legend.title = element_blank(),
-    legend.text = element_text(size = 12, color = "black"),
-    plot.title = element_text(size = 12, face = "bold", hjust = 0),
+    legend.text = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),    
     axis.title.x = element_blank(),
-    axis.text.x = element_text(size = 12, color = "black"),
-    axis.title.y = element_text(size = 12, color = "black"),                   
-    axis.text.y = element_text(size = 12, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),                   
+    axis.text.y = element_text(size = 10, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 5, l = 10)
   ) +
   labs(
@@ -268,22 +269,23 @@ p_degree <- summary_long %>%
   filter(metric == "degree") %>%
   ggplot(aes(x = year, color = node_type, fill = node_type)) +
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
-  geom_line(aes(y = smooth_mean, group = node), size = 0.8) +
+  geom_line(aes(y = smooth_mean, group = node), size = 0.6) +
+  geom_point(aes(y = mean, group = node), size = 0.6) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
-  theme_minimal(base_size = 14, base_family = "Helvetica") +  
+  theme_minimal(base_size = 10, base_family = "Helvetica") +  
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     legend.position = "right",
     legend.title = element_blank(),
-    legend.text = element_text(size = 12, color = "black"),
-    plot.title = element_text(size = 12, face = "bold", hjust = 0),
+    legend.text = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),    
     axis.title.x = element_blank(),
-    axis.text.x = element_text(size = 12, color = "black"),
-    axis.title.y = element_text(size = 12, color = "black"),                   
-    axis.text.y = element_text(size = 12, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),                   
+    axis.text.y = element_text(size = 10, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 5, l = 10)
   ) +
   labs(
@@ -301,7 +303,7 @@ windows()
 print(p_demo_combined)
 
 showtext_opts(dpi = 300)
-mypath1 = "plots/fig3_horizontal.tiff"
+mypath1 = "plots/fig3_horizontal_points.tiff"
 tiff(file = mypath1, width = 2500, height = 1000, res = 300, pointsize = 10, compression = "lzw")
 print(p_demo_combined)
 dev.off()
@@ -315,7 +317,7 @@ library(tidyr)
 library(dplyr)
 
 # Load bootstrapped results
-load("bootstrapped_pred_corrs_500_0312_filtered_by_se.saved")
+load("bootstrapped_pred_corrs_500_0312_filtered_by_se.saved") #called filtered_results, a list of 500 bootstrap replication
 load("yearlist.saved")
 ls()
 # Variables of interest
@@ -449,13 +451,26 @@ head(pca_summary)
 font_add("Helvetica", regular = "Z:/jc3528/OilSpill/Fonts/HelveticaNeueRoman.otf", bold = "Z:/jc3528/OilSpill/Fonts/HelveticaNeueBold.otf")
 showtext_auto()
 
-# Fig S3 Eigenvalues over time
-eigen_long <- pca_summary %>%
-  select(year, starts_with("eigenvalue")) %>%
-  pivot_longer(cols = -year, names_to = c("pc", ".value"),
-               names_pattern = "(eigenvalue[12])_(.*)") %>%
-  mutate(pc = ifelse(pc == "eigenvalue1", "PC1", "PC2")) %>%
-  group_by(pc) %>%
+
+loading_long <- pca_summary %>%
+  select(year, educ_mean, educ_se, age_mean, age_se, race_mean, race_se,
+         partyid_mean, partyid_se, polviews_mean, polviews_se) %>%
+  pivot_longer(cols = -year, names_to = c("variable", ".value"),
+               names_pattern = "(.+)_(mean|se)") %>%
+  mutate(
+    var_type = ifelse(variable %in% c("partyid", "polviews"), "Political", "Demographic"),
+    variable = case_when(
+      variable == "educ" ~ "Education",
+      variable == "age" ~ "Age",
+      variable == "race" ~ "Race",
+      variable == "partyid" ~ "Party",
+      variable == "polviews" ~ "Ideology",
+      TRUE ~ variable
+    ),
+    variable = factor(variable, levels = c("Party", "Ideology",
+                                           "Education", "Age", "Race"))
+  ) %>%
+  group_by(variable) %>%
   mutate(
     mean_fit = predict(loess(mean ~ year, span = 0.2, na.action = na.exclude)),
     se_fit   = predict(loess(se   ~ year, span = 0.2, na.action = na.exclude)),
@@ -464,40 +479,58 @@ eigen_long <- pca_summary %>%
   ) %>%
   ungroup()
 
-p1 <- ggplot(eigen_long, aes(x = year, y = mean, color = pc, fill = pc)) +
-  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.15, linewidth = 0, color = NA) +
+p2 <- ggplot(loading_long, aes(x = year, y = mean, color = variable, fill = variable)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.12, linewidth = 0, color = NA) +
   #geom_point(size = 2, alpha = 0.6) +
-  geom_line(aes(y = mean_fit), linewidth = 1.2) +
-  labs(x = "Year", y = "Eigenvalue", color = "") +
-  scale_color_manual(values = c("PC1" = "#d83034", "PC2" = "#000000")) +
-  scale_fill_manual(values = c("PC1" = "#d83034", "PC2" = "#000000")) +
+  geom_line(data = . %>% filter(!(variable %in% c("Party", "Ideology"))), aes(y = mean_fit), linewidth = 1.2) +
+  geom_line(data = . %>% filter(variable %in% c("Party", "Ideology")), aes(y = mean_fit), linewidth = 1.2) +
+  scale_color_manual(values = c(
+    "Education" = "dark green",
+    "Age" = "#ff7928",
+    "Race" = "#008dff",
+    "Party" = "#d83034",
+    "Ideology" = "#000000"
+  )) +
+  scale_fill_manual(values = c(
+    "Education" = "dark green",
+    "Age" = "#ff7928",
+    "Race" = "#008dff",
+    "Party" = "#d83034",
+    "Ideology" = "#000000"
+  )) +
+  labs(
+    x = "Year",
+    y = expression("PC1 Loadings"),
+    color = ""
+  ) +
   theme_minimal(base_size = 16, base_family = "Helvetica") +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     legend.position = "bottom",
     legend.title = element_blank(),
-    legend.text = element_text(size = 16, color = "black"),
-    plot.title = element_text(size = 16, face = "bold", hjust = 0),
+    legend.text = element_text(size = 14, color = "black"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 16, color = "black"),
-    axis.text.x = element_text(size = 16, color = "black"),
-    axis.text.y = element_text(size = 16, color = "black"),
+    axis.title.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.text.y = element_text(size = 14, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 10, l = 10)
   ) +
-  guides(color = guide_legend(override.aes = list(linewidth = 3)), fill = "none")
+  guides(color = guide_legend(override.aes = list(linewidth = 3), nrow = 2), fill = "none")
+
 
 windows()
-print(p1)
+print(p2)
 
 
-
-# Save plots
-tiff("plots/figs3.tiff", width = 1500, height = 1200, res = 300, pointsize = 14, compression = "lzw")
-print(p1)
+tiff("plots/fig4.tiff", width = 1500, height = 1200, res = 300, pointsize = 14, compression = "lzw")
+print(p2)
 dev.off()
 
+# Save data
+save(pca_df_all, pca_summary, file = "pca_network_results_bootstrapped.saved")
 
 
 #=============================================================================
@@ -583,6 +616,7 @@ plot_data_smooth <- plot_data_summary %>%
     legend_label = factor(legend_label, levels = c("Party and Ideology", " ", "Education and:", "Party", "Ideology"))
   )
 
+# Aesthetics
 # Add dummy rows for the spacer and "Education and:" legend header
 dummy_spacer <- plot_data_smooth[1, ]
 dummy_spacer$smooth_mean <- NA
@@ -604,8 +638,8 @@ plot_data_smooth$legend_label <- factor(plot_data_smooth$legend_label,
 # Create plot
 educ_party_pol <- ggplot(plot_data_smooth, aes(x = year, y = smooth_mean, color = legend_label, fill = legend_label)) +
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
-  geom_line(linewidth = 1) +
-  #geom_point(size = 2, alpha = 0.6) +
+  geom_line(linewidth = 0.6) +
+  geom_point(aes(y = mean_corr), size = 1, alpha = 0.6) +
   scale_y_continuous(limits = c(-0.05, 0.8)) +
   scale_color_manual(values = c(
     "Party and Ideology" = "#000000",
@@ -635,11 +669,11 @@ educ_party_pol <- ggplot(plot_data_smooth, aes(x = year, y = smooth_mean, color 
     legend.position = "right",
     plot.title = element_blank(),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 16, color = "black"),
-    axis.text.x = element_text(size = 16, color = "black"),
-    axis.text.y = element_text(size = 16, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
     legend.title = element_blank(),
-    legend.text = element_text(size = 16, color = "black"),
+    legend.text = element_text(size = 10, color = "black"),
     legend.key.width = unit(0.5, "cm"),
     legend.justification = c(0, 0.5)
   ) +
@@ -661,4 +695,3 @@ mypath1 = "plots/fig4.tiff"
 tiff(file = mypath1, width = 2200, height = 1000, res = 300, pointsize = 10, compression = "lzw")
 print(educ_party_pol)
 dev.off()
-
