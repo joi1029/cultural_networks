@@ -16,7 +16,6 @@ reps = 500 #number of bootstrap replications
 #define function
 getwd()
 
-
 #original version
 predict_correlations = function(i) {
     # Load required libraries on each worker
@@ -83,7 +82,7 @@ predict_correlations = function(i) {
 }
 
 
-# test on one bootstrap
+# Quick test on one bootstrap
 # result <- predict_correlations(1)
 # head(result)
 # tail(result)
@@ -120,14 +119,6 @@ results <- pblapply(1:reps, predict_correlations, cl = cl)
 stopCluster(cl)
 
 cat("Bootstrap completed with", length(results), "replications\n")
-
-
-# tail(results[[1]])
-# str(results)
-# class(results)
-# summary(results[[1]]$c_obs)
-# length(results)
-
 
 length(results)
 save(results, file = "bootstrapped_pred_corrs_1-500_0312.saved")

@@ -17,32 +17,12 @@ d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE)
 # Get unique years
 years <- sort(unique(d$year))
 
-#To preview how many issues are present per year
-# year_issue_counts <- data.frame(year = numeric(), issue_count = numeric())
-# for (y in years) {
-#   d_year <- d[d$year == y, ]
-#   col_counts <- sapply(d_year, function(x) sum(!is.na(x)))
-#   issues_with_100plus <- sum(col_counts >= 1)
-#   year_issue_counts <- rbind(year_issue_counts, 
-#                              data.frame(year = y, issue_count = issues_with_100plus))
-# }
-# print(year_issue_counts)
-# show_columns_for_year <- function(year_to_check) {
-#   d_year <- d[d$year == year_to_check, ]
-#   col_counts <- sapply(d_year, function(x) sum(!is.na(x)))
-#   valid_cols <- names(col_counts[col_counts >= 100])
-#   cat("Year", year_to_check, "has", length(valid_cols), "issues with >=100 responses:\n")
-#   cat(paste(head(valid_cols, 10), collapse=", "), "\n")
-#   if(length(valid_cols) > 10) cat("... and", length(valid_cols) - 10, "more\n")
-# }
-# show_columns_for_year(1972)
 
 #+=======================================================
 #Looping through and gathering correlations
 
 #parameters and inputs
 years = unique(d$year) #vector of GSS years 
-years
 thresh = 100 #minimum number of respondents for a correlation to be gathered 
 
 #create empty vector of correlation-pairs 

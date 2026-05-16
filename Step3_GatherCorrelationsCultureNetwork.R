@@ -22,8 +22,7 @@ head(pairs)
 str(pairs)
 length(pairs)
 
-
-
+# Load in processed GSS dataset
 d=read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo_logtransformed.dta")
 d <- d %>% 
   mutate(across(where(haven::is.labelled), ~ as.numeric(.x)))
@@ -32,7 +31,7 @@ class(d)
 getwd()
 
 
-#Demographic Variable version===========================================
+# name nominal variables for later correlation calculation
 nominal_vars <- c("relig", "region", "race")
 
 
@@ -178,7 +177,6 @@ compute_correlations_mixed(2, d, pairs) #test function
 #=================================================
 options(warn = -1) 
 # Set up the parallel backend to use multiple cores
-#d <- discretize_variables(d, n_bins = 10)
 
 n.core <- 14
 cl <- makeCluster(n.core)

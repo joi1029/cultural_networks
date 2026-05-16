@@ -1,8 +1,7 @@
-setwd("Z:/jc3528/OilSpill/CultureNetwork_0204")
+setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 getwd()
 rm(list=ls())
 
-install.packages(c("haven", "psych", "tidyr", "dplyr", "foreign"))
 library(haven)
 require(psych)
 library(tidyr)
@@ -10,7 +9,7 @@ library(dplyr)
 library(foreign)
 
 # read in stata file of GSS
-d=read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo.dta")
+d=read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo.dta") #Stata file with all GSS varables including demographics
 d <- as.data.frame(lapply(d, as.vector))  # Strip all haven attributes
 d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE) 
 
@@ -25,6 +24,6 @@ d$size <- d$size * 1000
 d$size <- log(d$size)
 summary(d$size)
 
-ncol(d) #1366 columns
+ncol(d) #1366 columns, including 'year'
 
 write.dta(d,file="GSS_Recoded2024_0204_withdemo_logtransformed.dta")

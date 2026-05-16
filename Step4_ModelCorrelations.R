@@ -15,13 +15,7 @@ length(unique(pairs))
 class(pairs)
 
 
-
-
-
-length(unique(r$j))
-
-r = subset(r, !(is.na(r$abs_c)) & is.finite(r$abs_c))#reduce to those for which correlations could be computed (removes NA and NaN)nrow(r) #518613 #537149 for culture network #573124 #560712 Jan 30
-
+r = subset(r, !(is.na(r$abs_c)) & is.finite(r$abs_c))#reduce to those for which correlations could be computed (removes NA and NaN)nrow(r)
 length(unique(r$j))
 
 
@@ -46,7 +40,7 @@ s = summaryBy(year72_dec+count ~ j, data=r, FUN=c(mean, sum))
 r$num_years=s$count.sum[match(r$j, s$j)] #in r, add column showing how many years a pair occurred in
 nrow(r)
 r=subset(r, r$num_years>=min) #filter, for at least_ years something occur in
-nrow(r) #242571 correlations after filtering for 5 occurrences #282196 for demographics #273017 for filtering after 5 occurrences
+nrow(r)
 head(r)
 length(unique(r$j)) # unique pairs after filtering for 5 occurrences
 #mean-center year variable 
@@ -54,17 +48,11 @@ r$yearcen = scale(r$year72_dec, center = T, scale = F)
 
 save(r, file="modelinput_0312.saved")
 
-# Preview
-length(unique(r$j))
-nrow(r)
-head(r)
-
 
 #=============================================================================================
 #save a list of years for convenient use later
 yearlist = unique(r$year)
 save(yearlist, file="yearlist.saved")
-yearlist
 
 load(file="modelinput_0312.saved")
 nrow(r)
@@ -89,7 +77,7 @@ getwd()
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 
 load(file="modelinput_0312.saved")
-load(file="bbqmodel1_0312.saved") #use the 1117 version not the 0117
+load(file="bbqmodel1_0312.saved")
 summary(m)
 
 

@@ -21,7 +21,6 @@ set.seed(36)
 #load data
 load(file="Z:/jc3528/OilSpill/CultureNetwork_0312/modelinput_0312.saved") #model-input dataframe
 
-head(r, 5)
 load(file="yearlist.saved")
 
 d=read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo_logtransformed.dta")
@@ -42,19 +41,13 @@ length(nodes)
 print(nodes)
 class(nodes)
 
-
 d = d[, colnames(d)=="year"|colnames(d) %in% nodes] #keep only relevant nodes
 #d <- data.frame(lapply(d, as.numeric))
 str(d)
 length(d)
 
-nrow(r) #286589
-sum(is.na(r$c))
-nrow(r)
-
 
 set.seed(36)
-
 #number of bootstrap replications
 reps = 500
 
@@ -251,7 +244,7 @@ nominal_vars <- c("region", "relig", "race")
 reps = 500
 yearlist
 
-#no parallel, for a quick test with one year
+#no parallel processing, for a quick test with one year
 # all_bcorrs <- lapply(c(1972), bootstrap_GSS_samples)
 # load("bootstrapped_corrs_5003121972.saved")
 # head(b_corrs)

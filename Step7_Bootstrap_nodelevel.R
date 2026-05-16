@@ -16,7 +16,7 @@ setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 
 # Load data
 load("Z:/jc3528/OilSpill/CultureNetwork_0312/modelinput_0312.saved")              # r: data.frame with j, x, y, year, c_obs, c_est, etc.
-load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_filtered_by_se.saved") #1-500 is the version with demographic nodes removed
+load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_filtered_by_se.saved")
 load("yearlist.saved")
 
 boot_preds <- filtered_results
@@ -32,7 +32,7 @@ for(i in seq_along(boot_preds)) {
   boot_preds[[i]]$j <- as.character(boot_preds[[i]]$j)
 }
 
-# Master node list, should be 254
+# Master node list
 nodes <- unique(c(r$x, r$y))
 
 
@@ -70,38 +70,32 @@ process_bootstrap <- function(i, boot_preds, r, nodes, yearlist) {
     g = graph_from_data_frame(sub[, c("x", "y", "weight")], directed=FALSE)
     g <- delete_edges(g, E(g)[E(g)$weight <= 0])
 
-    # c = cluster_walktrap(g, weights = E(g)$weight)
-    # V(g)$com = c$membership
+    c = cluster_walktrap(g, weights = E(g)$weight)
+    V(g)$com = c$membership
 
-    # Compute metrics
-    # strg  <- igraph::strength(g, weights = E(g)$weight)
-    # betw  <- igraph::betweenness(
-    #   g,
-    #   directed = FALSE,
-    #   weights = 1 / E(g)$weight
-    # )
-    close <- igraph::eigen_centrality(g, directed = FALSE, weights = E(g)$weight)$vector
+    #Compute metrics
+    strg  <- igraph::strength(g, weights = E(g)$weight)
+    betw  <- igraph::betweenness(
+      g,
+      directed = FALSE,
+      weights = 1 / E(g)$weight
+    )
 
-    #names(betw) <- V(g)$name
-    #names(strg) <- V(g)$name
-    names(close) <- V(g)$name
+    names(betw) <- V(g)$name
+    names(strg) <- V(g)$name
+
     
     # assign metrics to this year's rows in the df
     rows_y <- which(this_df$year == y)
-    # For nodes not in the graph, assign 0 (they don't exist in this bootstrap)
-    # this_df$betweenness[rows_y] <- ifelse(
-    #   this_df$node[rows_y] %in% names(betw),
-    #   betw[this_df$node[rows_y]],
-    #   0
-    # )
-    # this_df$degree[rows_y] <- ifelse(
-    #   this_df$node[rows_y] %in% names(strg),
-    #   strg[this_df$node[rows_y]],
-    #   0
-    # )
-    this_df$closeness[rows_y] <- ifelse(
-      this_df$node[rows_y] %in% names(close),
-      close[this_df$node[rows_y]],
+    #For nodes not in the graph, assign 0 (they don't exist in this bootstrap)
+    this_df$betweenness[rows_y] <- ifelse(
+      this_df$node[rows_y] %in% names(betw),
+      betw[this_df$node[rows_y]],
+      0
+    )
+    this_df$degree[rows_y] <- ifelse(
+      this_df$node[rows_y] %in% names(strg),
+      strg[this_df$node[rows_y]],
       0
     )
   }
@@ -134,10 +128,10 @@ names(node_metrics_list) <- paste0("boot", seq_along(boot_preds))
 head(node_metrics_list[[1]])
 length(node_metrics_list)
 str(node_metrics_list)
-save(node_metrics_list, file = "node_metrics_list_500_0312_eigen.RData")
+save(node_metrics_list, file = "node_metrics_list_500_0312.RData")
 
 
-load("node_metrics_list_500_0312_eigen.RData")
+load("node_metrics_list_500_0312.RData")
 
 # Calculate summary statistics across all bootstraps
 calculate_bootstrap_summary <- function(node_metrics_list) {
@@ -146,28 +140,19 @@ calculate_bootstrap_summary <- function(node_metrics_list) {
   summary_stats <- all_data %>%
     dplyr::group_by(node, year) %>%
     dplyr::summarise(
-      # betweenness_mean = mean(betweenness, na.rm = TRUE),
-      # betweenness_sd = sd(betweenness, na.rm = TRUE),
-      # betweenness_q025 = quantile(betweenness, 0.025, na.rm = TRUE),
-      # betweenness_q975 = quantile(betweenness, 0.975, na.rm = TRUE),
-      # betweenness_upper2se = betweenness_mean + 2 * betweenness_sd,
-      # betweenness_lower2se = betweenness_mean - 2 * betweenness_sd,
+      betweenness_mean = mean(betweenness, na.rm = TRUE),
+      betweenness_sd = sd(betweenness, na.rm = TRUE),
+      betweenness_q025 = quantile(betweenness, 0.025, na.rm = TRUE),
+      betweenness_q975 = quantile(betweenness, 0.975, na.rm = TRUE),
+      betweenness_upper2se = betweenness_mean + 2 * betweenness_sd,
+      betweenness_lower2se = betweenness_mean - 2 * betweenness_sd,
 
-      # degree_mean = mean(degree, na.rm = TRUE),
-      # degree_sd = sd(degree, na.rm = TRUE),
-      # degree_q025 = quantile(degree, 0.025, na.rm = TRUE),
-      # degree_q975 = quantile(degree, 0.975, na.rm = TRUE),
-      # degree_upper2se = degree_mean + 2 * degree_sd,
-      # degree_lower2se = degree_mean - 2 * degree_sd,
-
-      eigen_mean = mean(eigen, na.rm = TRUE),
-      eigen_sd = sd(eigen, na.rm = TRUE),
-      eigen_q025 = quantile(eigen, 0.025, na.rm = TRUE),
-      eigen_q975 = quantile(eigen, 0.975, na.rm = TRUE),
-      eigen_upper2se = eigen_mean + 2 * eigen_sd,
-      eigen_lower2se = eigen_mean - 2 * eigen_sd,
-      n_bootstraps = n(),
-      .groups = 'drop'
+      degree_mean = mean(degree, na.rm = TRUE),
+      degree_sd = sd(degree, na.rm = TRUE),
+      degree_q025 = quantile(degree, 0.025, na.rm = TRUE),
+      degree_q975 = quantile(degree, 0.975, na.rm = TRUE),
+      degree_upper2se = degree_mean + 2 * degree_sd,
+      degree_lower2se = degree_mean - 2 * degree_sd
     )
   
   return(summary_stats)
@@ -175,5 +160,4 @@ calculate_bootstrap_summary <- function(node_metrics_list) {
 
 node_summary <- calculate_bootstrap_summary(node_metrics_list)
 
-
-save(node_summary, file = "bootstrap_summary_stats_500_0312_eigen.RData")
+save(node_summary, file = "bootstrap_summary_stats_500_0312.RData")

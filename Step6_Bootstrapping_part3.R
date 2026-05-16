@@ -19,15 +19,11 @@ load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_fi
 load(file="modelinput_0312.saved")
 load(file="yearlist.saved")
 
-ls()
-boot_preds <- filtered_results
-reps = length(boot_preds) #number of bootstrap replications
-rm(filtered_results)
-reps
 
-head(boot_preds[[1]])
-colnames(boot_preds[[1]])
-unique(boot_preds[[1]]$year)
+
+head(filtered_results[[1]])
+colnames(filtered_results[[1]])
+unique(filtered_results[[1]]$year)
 yearlist
 length(yearlist)
 
@@ -46,13 +42,13 @@ clusterEvalQ(cl, {
 })
 
 # Export large objects ONCE to all workers (not inside function calls)
-clusterExport(cl, varlist = c("boot_preds", "r", "yearlist"), envir = environment())
+clusterExport(cl, varlist = c("filtered_results", "r", "yearlist"), envir = environment())
 
 # process a single bootstrap replication to get network level metrics for each year
 process_bootstrap_rep <- function(i) {
   
   # Set up master edgelist across all years 
-  e = boot_preds[[i]]
+  e = filtered_results[[i]]
   e$x = r$x[match(e$j, r$j)]
   e$y = r$y[match(e$j, r$j)]
   
@@ -116,10 +112,8 @@ stopCluster(cl)
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_filtered_by_se.saved") #called filtered_results
 
-b_corrs <- filtered_results
-rm(filtered_results)
 
-reps <- length(b_corrs)
+reps <- length(filtered_results)
 
 # Function to calculate weighted kcore
 get_weighted_kcores <- function(
@@ -199,7 +193,6 @@ get_weighted_kcores <- function(
 
 
 
-
 # Parallel K-core
 n_cores <- 4
 cl <- makeCluster(n_cores)
@@ -208,11 +201,11 @@ clusterEvalQ(cl, {
   library(dplyr)
   library(tidyr)
 })
-clusterExport(cl, c("b_corrs", "yearlist", "get_weighted_kcores"), envir = environment())
+clusterExport(cl, c("filtered_results", "yearlist", "get_weighted_kcores"), envir = environment())
 
 # Function to process one bootstrap sample
 process_one_bootstrap <- function(i) {
-  e <- b_corrs[[i]]
+  e <- filtered_results[[i]]
   e$weight <- ifelse(is.na(e$c_obs), e$c_est, e$c_obs)
   e$weight[e$weight < 0] <- 0
   e$weight[e$weight > 1] <- 1
@@ -273,7 +266,7 @@ process_one_bootstrap <- function(i) {
   list(max_k = max_k_vec, nodes = nodes_vec, density = density_vec, node_data = node_data)
 }
 
-#test
+# Quick test on ten bootstraps
 #results <- pblapply(1:10, process_one_bootstrap)
 #str(results[[1]])
 #summary(results[[1]]$max_k)
@@ -284,7 +277,7 @@ cat("Running parallel k-core analysis on", n_cores, "cores...\n")
 results <- pblapply(1:500, process_one_bootstrap, cl = cl)
 stopCluster(cl)
 
-reps <- 500 #(length(results))
+reps <- 500
 # Combine results into matrices
 Max_k <- matrix(NA, nrow = length(yearlist), ncol = reps + 1)
 Nodes_in_maxk <- matrix(NA, nrow = length(yearlist), ncol = reps + 1)
@@ -307,7 +300,7 @@ for (i in 1:reps) {
 
 head(results[[1]])
 
-# Save matrices (following Step6 pattern)
+# Save intermediate matrices
 save(Max_k, file = "Max_k_full.saved")
 save(Nodes_in_maxk, file = "Nodes_in_maxk_full.saved")
 save(Max_kcore_density, file = "Max_kcore_density_full.saved")
@@ -364,52 +357,3 @@ head(max_kcore_summary_bootstrapped)
 tail(max_kcore_summary_bootstrapped)
 # Save both versions
 save(max_kcore_summary_bootstrapped, file = "max_kcore_summary_bootstrapped.saved")
-
-
-
-
-#=========================================================================================
-# Centralization (not used)
-# ls()
-# boot_preds <- filtered_results
-# length(boot_preds)
-
-# Centr = matrix(NA, nrow=length(yearlist), ncol = reps + 1)
-# Centr[,1] = yearlist
-
-# for(i in 1:reps) {
-#   print(i)
-  
-#   # Set up master edgelist across all years 
-#   e = boot_preds[[i]]
-#   e$x = r$x[match(e$j, r$j)]
-#   e$y = r$y[match(e$j, r$j)]
-#   e$weight = ifelse(is.na(e$c_obs), e$c_est, e$c_obs)
-  
-#   e$weight[e$weight < 0] = 0
-#   e$weight[e$weight > 1] = 1
-  
-#   # Record network properties for each year
-#   j = 1
-#   for(y in yearlist) {
-#     sub = e[e$year == y & e$weight > 0, ]
-    
-#     if(nrow(sub) > 0) {
-#       g = graph_from_data_frame(sub[, c("x", "y", "weight")], directed = FALSE)
-#       betweenness_values = igraph::betweenness(g, directed = FALSE, weights = 1 / E(g)$weight)
-      
-#       # Calculate HHI (Herfindahl-Hirschman Index) of betweenness centrality
-#       if (length(betweenness_values) <= 1 || all(betweenness_values == 0)) {
-#         centralization <- 0
-#       } else {
-#         bw_share <- betweenness_values / sum(betweenness_values)
-#         centralization <- sum(bw_share^2)
-#       }
-      
-#       Centr[j, i+1] = centralization
-#     }
-#     j = j + 1
-#   }
-# }
-
-# save(Centr, file = "Centr_full.saved")

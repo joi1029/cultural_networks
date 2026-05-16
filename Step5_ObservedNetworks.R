@@ -42,7 +42,6 @@ for(y in yearlist) {
   }
 
 
-
 #save all networks as a large list for later analysis
 files <- list.files(pattern = "^full_network_0312[0-9]{4}\\.saved$")
 files
@@ -68,8 +67,11 @@ for (f in files) {
 save(networks, file = "networks0312.saved")
 
 #=======================================================================================
-#This is for pearson correlation
-
+# There are two ways to filter for statistical significance.
+# Method 1: Year-specific pooled thresholds, calculate SE for each correlation using the
+# analytical Pearson formula, pool all SE for that year and take the mean, threshold = 2*SE_year, applies a single
+# cutoff to all edges in that year
+# This is simpler but less precise, use to gain a quick network visualization
 
 for(year in yearlist) {
   year_name <- as.character(year)
@@ -126,16 +128,11 @@ load("all_thresholds_0312_500.saved")
 load("networks0312.saved")
 head(all_thresholds)
 #=======================================================================================
-# Filter networks using all_thresholds
+# Method 2: use edge-specific bootstrap thresholds.
+# Each edge pair has edge-specific thresholds calculated from 500 bootstrap samples.
+
+# Load pre-computed thresholds
 load("all_thresholds_0312_500.saved")
-#   j                year threshold_2sd
-#   <fct>           <dbl>         <dbl>
-# 1 abdefect_age     1972        0.0542
-# 2 abdefect_busing  1972        0.0611
-# 3 abdefect_cappun  1972        0.0531
-# 4 abdefect_colath  1972        0.0522
-# 5 abdefect_colcom  1972        0.0517
-# 6 abdefect_courts  1972        0.0410
 load("yearlist.saved")
 
 for (year in yearlist) {
@@ -176,7 +173,7 @@ length(E(networks[[1]]))
 library(igraph)
 
 # Load files
-load("networks_0312_filtered_by_se.saved")
+load("networks_0312_filtered_by_2sd_thresholds.saved")
 load("yearlist.saved")
 
 
@@ -186,7 +183,8 @@ node_label_lookup <- setNames(node_tags$group_tag, node_tags$node)
 head(node_label_lookup)
 
 # Visualization
-# process and export networks by year
+# Process and export networks by year into graphml objects used in Gephi
+# For each network, assign node attributes for category and vis_label, and edge attributes for edge_type based on the category of the higher-degree endpoint. Then export as graphml for use in Gephi.
 export_network_by_year <- function(year, networks, yearlist, node_tags, persistent_top_nodes, output_dir = ".") {
   idx <- which(yearlist == year)
   cat("Processing network for year:", year, "index:", idx, "\n")
