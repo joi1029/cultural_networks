@@ -5,7 +5,6 @@ rm(list=ls())
 getwd()
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 
-install.packages(c("igraph", "ineq", "parallel", "pbapply"))
 library(igraph)
 library(ineq)
 library(parallel)
@@ -14,18 +13,9 @@ library(dplyr)
 library(purrr)
 library(ggplot2)
 
-ls()
 load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_filtered_by_se.saved")
 load(file="modelinput_0312.saved")
 load(file="yearlist.saved")
-
-
-
-head(filtered_results[[1]])
-colnames(filtered_results[[1]])
-unique(filtered_results[[1]]$year)
-yearlist
-length(yearlist)
 
 #####################################################
 # Parallel processing step
@@ -145,6 +135,7 @@ get_weighted_kcores <- function(
     stop("Edge weights must be nonnegative.")
   }
   inv_ab <- 1 / (alpha + beta)
+
   # Garas-style weighted degree:
   # k_i^(w) = (deg_i^alpha * str_i^beta)^(1/(alpha + beta))
   weighted_degree <- function(h) {
@@ -152,6 +143,7 @@ get_weighted_kcores <- function(
     s   <- igraph::strength(h, mode = mode, weights = igraph::edge_attr(h, weight_attr))
     (deg^alpha * s^beta)^inv_ab
   }
+
   # Determine the maximum k threshold from the full graph
   if (is.null(max_k)) {
     kp0 <- weighted_degree(g)
@@ -321,21 +313,20 @@ bootstrap_max_kcore_summaries <- lapply(1:reps, function(i) {
 all_bootstrap_summaries <- bind_rows(bootstrap_max_kcore_summaries)
 cat("Total rows in max k-core summary:", nrow(all_bootstrap_summaries), "\n")
 head(all_bootstrap_summaries)
+
 # Combine all node-level k-core data
 all_bootstrap_node_kcores <- bind_rows(all_node_kcores)
 cat("Total rows in node k-core data:", nrow(all_bootstrap_node_kcores), "\n")
 getwd()
-# Save the summary data
-save(bootstrap_max_kcore_summaries, file = "bootstrap_max_kcore_summaries_500.saved")
-save(all_bootstrap_summaries, file = "all_bootstrap_summaries_combined.saved")
-save(all_bootstrap_node_kcores, file = "all_bootstrap_node_kcores_combined.saved")
 
-str(bootstrap_max_kcore_summaries) #all 500 bootstraps as list
-str(all_bootstrap_summaries) #all 500 bootstraps combined as simgle list
-str(all_bootstrap_node_kcores) # node-level information and kcore
+# Save the summary data
+save(bootstrap_max_kcore_summaries, file = "bootstrap_max_kcore_summaries_500.saved") #all 500 bootstraps as list
+save(all_bootstrap_summaries, file = "all_bootstrap_summaries_combined.saved") #all 500 bootstraps combined as simgle list
+save(all_bootstrap_node_kcores, file = "all_bootstrap_node_kcores_combined.saved")  # node-level information and kcore
+
 
 #=== Mean and SE ===
-bootstrap_summary_stats <- all_bootstrap_summaries %>%
+max_kcore_summary_bootstrapped <- all_bootstrap_summaries %>%
   group_by(year) %>%
   dplyr::summarise(
     max_k_mean = mean(max_k, na.rm = TRUE),
@@ -343,17 +334,5 @@ bootstrap_summary_stats <- all_bootstrap_summaries %>%
     n_bootstraps = n(),
     .groups = "drop"
   )
-head(bootstrap_summary_stats)
-save(bootstrap_summary_stats, file = "bootstrap_summary_stats.saved")
 
-#Create summary dataframe
-max_kcore_summary_bootstrapped <- data.frame(
-  year = bootstrap_summary_stats$year,
-  mean_max_k = bootstrap_summary_stats$max_k_mean,
-  se_max_k = bootstrap_summary_stats$max_k_se,
-  n_bootstraps = bootstrap_summary_stats$n_bootstraps
-)
-head(max_kcore_summary_bootstrapped)
-tail(max_kcore_summary_bootstrapped)
-# Save both versions
 save(max_kcore_summary_bootstrapped, file = "max_kcore_summary_bootstrapped.saved")

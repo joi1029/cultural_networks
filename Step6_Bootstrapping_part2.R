@@ -92,7 +92,6 @@ predict_correlations = function(i) {
 # rm(result)
 
 
-
 # Parallel Processing ====================================================
 n.core <- 7
 cl <- makeCluster(n.core)

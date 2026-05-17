@@ -2,9 +2,9 @@
 rm(list=ls())
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0223_sesnodem")
 
-require(doBy)
-require(lme4)
-require(plyr)
+library(doBy)
+library(lme4)
+library(plyr)
 
 load("Z:/jc3528/OilSpill/CultureNetwork_0223_sesnodem/all_pairs_0312.saved") # called pairs
 load("Z:/jc3528/OilSpill/CultureNetwork_0312/all_correlations_0312.saved") # called r
@@ -47,6 +47,8 @@ length(unique(r$j)) # unique pairs after filtering for 5 occurrences
 r$yearcen = scale(r$year72_dec, center = T, scale = F)
 
 save(r, file="modelinput_0312.saved")
+
+load("Z:/jc3528/OilSpill/CultureNetwork_0312/modelinput_0312.saved")
 
 
 #=============================================================================================

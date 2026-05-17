@@ -12,8 +12,8 @@ getwd()
 
 
 load(file="yearlist.saved")
-load(file = "modelinput_0212.saved")
-load("corr_predictions_model_02122024.saved") #called e in the file
+load(file = "modelinput_0312.saved")
+load("corr_predictions_model_0312.saved") #called e in the file
 load("yearlist.saved")
 
 
@@ -127,6 +127,7 @@ length(E(networks[[1]]))
 load("all_thresholds_0312_500.saved")
 load("networks0312.saved")
 head(all_thresholds)
+
 #=======================================================================================
 # Method 2: use edge-specific bootstrap thresholds.
 # Each edge pair has edge-specific thresholds calculated from 500 bootstrap samples.
@@ -176,9 +177,8 @@ library(igraph)
 load("networks_0312_filtered_by_2sd_thresholds.saved")
 load("yearlist.saved")
 
-
 #load tags
-node_tags <- read.csv("Z:/jc3528/OilSpill/Sequence_Analysis/node_tags_processed.csv")
+node_tags <- read.csv("Z:/jc3528/OilSpill/Sequence_Analysis/node_tags_processed.csv") # Contains issue tags for each survey item
 node_label_lookup <- setNames(node_tags$group_tag, node_tags$node)
 head(node_label_lookup)
 
@@ -199,12 +199,7 @@ export_network_by_year <- function(year, networks, yearlist, node_tags, persiste
     "polviews" = "Ideology",
     "race" = "Race",
     "age" = "Age",
-    "region" = "Region",
     "educ" = "Education",
-    "libath" = "Allow Atheist book in library",
-    "homosex" = "Accept gay relationships",
-    "libcom" = "Allow communist book in library",
-    "spkcom" = "Allow communist speaker"
   )
   
   node_label_lookup <- setNames(node_tags$group_tag, node_tags$node)
@@ -297,145 +292,3 @@ export_network_by_year <- function(year, networks, yearlist, node_tags, persiste
 
 export_network_by_year(1996, networks, yearlist, node_tags, persistent_top_nodes)
 export_network_by_year(2024, networks, yearlist, node_tags, persistent_top_nodes)
-
-
-
-load("networks_0312_filtered_by_se.saved")
-head(networks)
-
-#=========================================================
-# Generate and save network visualizations for GIF creation
-library(igraph)
-library(ggraph)
-library(ggplot2)
-
-# Load node tags for coloring
-node_tags <- read.csv("Z:/jc3528/OilSpill/Sequence_Analysis/node_tags_processed.csv")
-
-# Create color mapping for group_tag
-group_colors <- c(
-  "socio-cultural" = "#f9e858",
-  "econ" = "#008dff",
-  "public_policy" = "#4ecb8d",
-  "politic" = "#000000"
-)
-
-# Add demographic color
-group_colors["demog"] <- "#ff7928"
-
-# Create output directory for network images
-if (!dir.exists("network_images")) {
-  dir.create("network_images")
-}
-
-# Create a reference layout once for all years (computed from union of all nodes)
-# This is created outside the function to be reused
-compute_reference_layout <- function(networks, node_tags) {
-  # Collect all unique nodes across all networks
-  all_nodes <- unique(unlist(lapply(networks, function(g) V(g)$name)))
-  
-  # Create a union graph with all nodes and edges from all years
-  all_edges <- data.frame()
-  for (g in networks) {
-    edges <- as_edgelist(g, names = TRUE)
-    edge_weights <- E(g)$weight
-    edge_df <- data.frame(from = edges[, 1], to = edges[, 2], weight = edge_weights)
-    all_edges <- rbind(all_edges, edge_df)
-  }
-  
-  # Aggregate weights by edge (use mean)
-  all_edges <- aggregate(weight ~ from + to, data = all_edges, FUN = mean)
-  
-  # Create the union graph
-  g_union <- graph_from_data_frame(all_edges, directed = FALSE, vertices = data.frame(name = all_nodes))
-  
-  # Compute layout once with a fixed seed
-  set.seed(42)
-  layout <- layout_with_kk(g_union, weights = E(g_union)$weight)
-  
-  # Return named coordinates
-  coords <- data.frame(node = all_nodes, x = layout[, 1], y = layout[, 2])
-  return(coords)
-}
-
-# Function to visualize and save network as JPG
-save_network_image <- function(g, year, node_tags, group_colors, ref_coords, output_dir = "network_images") {
-  
-  # Remove edges with weight <= 0 (required for Kamada-Kawai layout)
-  g <- delete_edges(g, which(E(g)$weight <= 0.2))
-    # Keep only the largest connected component
-  comp <- components(g)
-  largest_comp <- which.max(comp$csize)
-  g <- induced_subgraph(g, which(comp$membership == largest_comp))
-  
-  # Create a data frame for nodes with their categories
-  node_names <- V(g)$name
-  node_data <- data.frame(
-    node = node_names,
-    stringsAsFactors = FALSE
-  )
-  
-  # Map group_tag from node_tags
-  node_data$group_tag <- sapply(node_names, function(n) {
-    if (n %in% c("partyid", "polviews")) {
-      return("politic")
-    } else if (n %in% c("region", "age", "race", "educ", "realinc", "prestg10", "size", "sex", "relig")) {
-      return("demog")
-    } else {
-      tag <- node_tags$group_tag[node_tags$node == n]
-      if (length(tag) > 0) return(tag[1]) else return(NA)
-    }
-  })
-  
-  # Assign colors based on group_tag
-  node_data$color <- sapply(node_data$group_tag, function(tag) {
-    ifelse(tag %in% names(group_colors), group_colors[tag], "#cccccc")
-  })
-  
-  # Convert igraph to ggraph format
-  edges <- as_edgelist(g)
-  edges_df <- data.frame(
-    from = edges[, 1],
-    to = edges[, 2],
-    weight = E(g)$weight,
-    stringsAsFactors = FALSE
-  )
-  
-  # Get fixed coordinates from reference layout
-  fixed_layout <- ref_coords[ref_coords$node %in% node_names, ]
-  fixed_layout <- fixed_layout[match(node_names, fixed_layout$node), ]
-  
-  # Create ggraph visualization with fixed layout for consistency across years
-  p <- ggraph(g, layout = fixed_layout[, c("x", "y")]) +
-    geom_edge_link(aes(width = weight), alpha = 0.3, color = "gray60") +
-    geom_node_point(aes(color = node_data$group_tag[match(name, node_names)]), 
-                    size = 5) +
-    scale_color_manual(values = group_colors, na.value = "#cccccc") +
-    scale_edge_width(range = c(0.5, 3)) +
-    theme_void() +
-    theme(legend.position = "bottom", legend.title = element_blank()) +
-    ggtitle(paste("Network", year))
-  
-  # Save as JPG
-  output_file <- file.path(output_dir, paste0("network_", year, ".jpg"))
-  ggsave(output_file, plot = p, width = 12, height = 10, dpi = 150, device = "jpeg")
-  
-  cat("Saved:", output_file, "\n")
-  return(output_file)
-}
-
-# Generate images for all networks
-# Compute reference layout once for consistency across all years
-ref_coords <- compute_reference_layout(networks, node_tags)
-
-year_list <- names(networks)
-for (year in year_list) {
-  tryCatch({
-    save_network_image(networks[[year]], year, node_tags, group_colors, ref_coords)
-  }, error = function(e) {
-    cat("Error processing year", year, ":", e$message, "\n")
-  })
-}
-
-cat("\nAll network images saved to 'network_images' directory\n")
-cat("To create a GIF, use ImageMagick: convert -delay 50 network_images/network_*.jpg network_animation.gif\n")

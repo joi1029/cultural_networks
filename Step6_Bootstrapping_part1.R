@@ -20,7 +20,6 @@ set.seed(36)
 
 #load data
 load(file="Z:/jc3528/OilSpill/CultureNetwork_0312/modelinput_0312.saved") #model-input dataframe
-
 load(file="yearlist.saved")
 
 d=read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo_logtransformed.dta")
@@ -28,8 +27,6 @@ d <- d %>%
   mutate(across(where(haven::is.labelled), ~ as.numeric(.x)))
 d[] <- lapply(d, function(x) as.numeric(as.character(x))) #check type
 class(d)
-
-
 
 #only keep GSS variables we need
 load(file="Z:/jc3528/OilSpill/CultureNetwork_0312/full_network_03122024.saved")
@@ -48,11 +45,9 @@ length(d)
 
 
 set.seed(36)
-#number of bootstrap replications
-reps = 500
+reps = 500 #number of bootstrap replications
 
 
-yearlist
 ###############################################
 #define function
 bootstrap_GSS_samples = function(y) {
@@ -133,7 +128,7 @@ bootstrap_GSS_samples = function(y) {
             bs_valid <- bs_temp[valid_cases, ]
             b_corrs[[j]]$n_obs[idx] = sum(valid_cases)
             
-            # ---- Helper function: PRE = sqrt(R^2) (same as compute_correlations_mixed) ----
+            # Helper function: PRE = sqrt(R^2) (same as compute_correlations_mixed) ----
             pre_sqrt_r2 <- function(dv_numeric, iv) {
                 ok <- complete.cases(dv_numeric, iv)
                 if (sum(ok) < 5) return(NA_real_)
@@ -268,5 +263,6 @@ clusterExport(cl, varlist = c("d", "r", "yearlist", "reps", "nominal_vars", "boo
 
 print("Starting parallel bootstrap ...")
 all_bcorrs <- pblapply(yearlist, bootstrap_GSS_samples, cl = cl)
+
 # Stop cluster
 stopCluster(cl)

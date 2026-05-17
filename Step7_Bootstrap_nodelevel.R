@@ -16,20 +16,14 @@ setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 
 # Load data
 load("Z:/jc3528/OilSpill/CultureNetwork_0312/modelinput_0312.saved")              # r: data.frame with j, x, y, year, c_obs, c_est, etc.
-load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_filtered_by_se.saved")
+load("Z:/jc3528/OilSpill/CultureNetwork_0312/bootstrapped_pred_corrs_500_0312_filtered_by_se.saved") # 500 bootstrap replications of correlations
 load("yearlist.saved")
-
-boot_preds <- filtered_results
-length(boot_preds)
-tail(boot_preds[[1]])
-
-rm(filtered_results)
 
 
 # Ensure identifier columns are character for matching
 r$j <- as.character(r$j)
-for(i in seq_along(boot_preds)) {
-  boot_preds[[i]]$j <- as.character(boot_preds[[i]]$j)
+for(i in seq_along(filtered_results)) {
+  filtered_results[[i]]$j <- as.character(filtered_results[[i]]$j)
 }
 
 # Master node list
@@ -37,13 +31,13 @@ nodes <- unique(c(r$x, r$y))
 
 
 # Initialize list to hold results per bootstrap
-node_metrics_list <- vector("list", length(boot_preds))
-names(node_metrics_list) <- paste0("boot", seq_along(boot_preds))
+node_metrics_list <- vector("list", length(filtered_results))
+names(node_metrics_list) <- paste0("boot", seq_along(filtered_results))
 
 
 # Function to process a single bootstrap
-process_bootstrap <- function(i, boot_preds, r, nodes, yearlist) {
-  e0 = boot_preds[[i]]
+process_bootstrap <- function(i, filtered_results, r, nodes, yearlist) {
+  e0 = filtered_results[[i]]
   e0$x = r$x[match(e0$j, r$j)]
   e0$y = r$y[match(e0$j, r$j)]
  
@@ -63,7 +57,7 @@ process_bootstrap <- function(i, boot_preds, r, nodes, yearlist) {
       closeness  = NA_real_ 
     )
 
-  #record network properties for each year
+  # Record network properties for each year
   for(y in yearlist) {
     sub = e0[e0$year==y,] 
     # Remove edges where both x and y are demographic nodes
@@ -102,7 +96,7 @@ process_bootstrap <- function(i, boot_preds, r, nodes, yearlist) {
   return(this_df)
 }
 
-# Set up parallel cluster
+# Set up parallel cluster to process bootstrap network metrics
 n_cores <- 4
 cl <- makeCluster(n_cores)
 
@@ -125,15 +119,12 @@ stopCluster(cl)
 
 names(node_metrics_list) <- paste0("boot", seq_along(boot_preds))
 
-head(node_metrics_list[[1]])
-length(node_metrics_list)
-str(node_metrics_list)
 save(node_metrics_list, file = "node_metrics_list_500_0312.RData")
 
 
+# Calculate summary statistics across all bootstraps
 load("node_metrics_list_500_0312.RData")
 
-# Calculate summary statistics across all bootstraps
 calculate_bootstrap_summary <- function(node_metrics_list) {
   all_data <- do.call(rbind, node_metrics_list)
   

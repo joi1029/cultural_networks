@@ -2,6 +2,7 @@
 rm(list=ls())
 
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
+setwd("Z:/jc3528/OilSpill/OilSpill-CultureNetwork-Publication")
 library(ggplot2)
 library(grid)
 library(gmodels)
@@ -79,13 +80,17 @@ p1_raw <- ggplot(single_metrics_raw[single_metrics_raw$measure == "Density", ],
               alpha = 0.3, fill = "grey50") +
   geom_point(aes(y = mean), size = 1, color = "black") +
   geom_line(aes(y = smooth), linewidth = 0.8, color = "black") +
-  scale_y_continuous(expand = expansion(mult = c(0.15, 0.05))) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
   labs(title = "A", x = "", y = "Density") +
   theme_minimal() +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     legend.position = "bottom",
     plot.title = element_text(size = 12, face = "bold", hjust = 0),        
     plot.subtitle = element_text(hjust = 0.5, size = 12, color = "black"),     
@@ -109,12 +114,17 @@ p2_raw <- ggplot(kcore_data_raw, aes(x = yearlist)) +
               alpha = 0.3, fill = "grey50") +
   geom_point(aes(y = max_kcore_mean), size = 1, color = "black") +
   geom_line(aes(y = max_kcore_smooth), linewidth = 0.8, color = "black") +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
   labs(title = "B", x = "", y = expression("Max " * italic(k) * "-core")) +
   theme_minimal() +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     legend.position = "bottom",
     plot.title = element_text(size = 12, face = "bold", hjust = 0),        
     plot.subtitle = element_text(hjust = 0.5, size = 12, color = "black"),     
@@ -241,6 +251,14 @@ p_betweenness <- summary_long %>%
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
   geom_point(aes(y = mean, group = node), size = 0.6) +
   geom_line(aes(y = smooth_mean, group = node), size = 0.6) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+  breaks = seq(0, 11000, 2000),
+  minor_breaks = seq(0, 11000, 1000), guide = guide_axis(minor.ticks = TRUE)
+) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +  
@@ -251,7 +269,9 @@ p_betweenness <- summary_long %>%
     legend.text = element_text(size = 10, color = "black"),
     plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),    
+    panel.grid.minor = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
     axis.text.x = element_text(size = 10, color = "black"),
     axis.title.y = element_text(size = 10, color = "black"),                   
@@ -263,7 +283,7 @@ p_betweenness <- summary_long %>%
     y = "Betweenness Centrality"
   ) +
   guides(color = "none", fill = "none")
-
+p_betweenness
 # Degree plot
 p_degree <- summary_long %>%
   filter(metric == "degree") %>%
@@ -271,6 +291,14 @@ p_degree <- summary_long %>%
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
   geom_line(aes(y = smooth_mean, group = node), size = 0.6) +
   geom_point(aes(y = mean, group = node), size = 0.6) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+  breaks = seq(0, 50, 10),
+  minor_breaks = seq(0, 50, 5),
+  guide = guide_axis(minor.ticks = TRUE)) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +  
@@ -281,7 +309,8 @@ p_degree <- summary_long %>%
     legend.text = element_text(size = 10, color = "black"),
     plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),    
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
     axis.text.x = element_text(size = 10, color = "black"),
     axis.title.y = element_text(size = 10, color = "black"),                   
@@ -479,11 +508,19 @@ loading_long <- pca_summary %>%
   ) %>%
   ungroup()
 
-p2 <- ggplot(loading_long, aes(x = year, y = mean, color = variable, fill = variable)) +
+p_loadings <- ggplot(loading_long, aes(x = year, y = mean, color = variable, fill = variable)) +
   geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.12, linewidth = 0, color = NA) +
-  #geom_point(size = 2, alpha = 0.6) +
-  geom_line(data = . %>% filter(!(variable %in% c("Party", "Ideology"))), aes(y = mean_fit), linewidth = 1.2) +
-  geom_line(data = . %>% filter(variable %in% c("Party", "Ideology")), aes(y = mean_fit), linewidth = 1.2) +
+  geom_point(size = 1) +
+  geom_line(data = . %>% filter(!(variable %in% c("Party", "Ideology"))), aes(y = mean_fit), linewidth = 0.6) +
+  geom_line(data = . %>% filter(variable %in% c("Party", "Ideology")), aes(y = mean_fit), linewidth = 0.6) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+  minor_breaks = seq(1970, 2030, 5),
+  guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+  breaks = seq(0, 1, 0.2),
+  minor_breaks = seq(0, 1, 0.1), guide = guide_axis(minor.ticks = TRUE)
+) +
   scale_color_manual(values = c(
     "Education" = "dark green",
     "Age" = "#ff7928",
@@ -503,30 +540,31 @@ p2 <- ggplot(loading_long, aes(x = year, y = mean, color = variable, fill = vari
     y = expression("PC1 Loadings"),
     color = ""
   ) +
-  theme_minimal(base_size = 16, base_family = "Helvetica") +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
-    legend.position = "bottom",
+    legend.position = "right",
     legend.title = element_blank(),
-    legend.text = element_text(size = 14, color = "black"),
-    plot.title = element_text(size = 14, face = "bold", hjust = 0),
+    legend.text = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 14, color = "black"),
-    axis.text.x = element_text(size = 14, color = "black"),
-    axis.text.y = element_text(size = 14, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 10, l = 10)
   ) +
-  guides(color = guide_legend(override.aes = list(linewidth = 3), nrow = 2), fill = "none")
+  guides(color = guide_legend(override.aes = list(linewidth = 3)), fill = "none")
 
 
 windows()
-print(p2)
+print(p_loadings)
 
 
-tiff("plots/fig4.tiff", width = 1500, height = 1200, res = 300, pointsize = 14, compression = "lzw")
-print(p2)
+tiff("plots/fig4.tiff", width = 2000, height = 1000, res = 300, pointsize = 10, compression = "lzw")
+print(p_loadings)
 dev.off()
 
 # Save data
@@ -639,8 +677,12 @@ plot_data_smooth$legend_label <- factor(plot_data_smooth$legend_label,
 educ_party_pol <- ggplot(plot_data_smooth, aes(x = year, y = smooth_mean, color = legend_label, fill = legend_label)) +
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
   geom_line(linewidth = 0.6) +
-  geom_point(aes(y = mean_corr), size = 1, alpha = 0.6) +
-  scale_y_continuous(limits = c(-0.05, 0.8)) +
+  geom_point(aes(y = mean_corr), size = 1) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2), minor_breaks = seq(0, 1, 0.1), guide = guide_axis(minor.ticks = TRUE)) +
   scale_color_manual(values = c(
     "Party and Ideology" = "#000000",
     " " = NA,
@@ -668,6 +710,7 @@ educ_party_pol <- ggplot(plot_data_smooth, aes(x = year, y = smooth_mean, color 
     panel.grid.minor = element_blank(),
     legend.position = "right",
     plot.title = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 10, color = "black"),
     axis.text.x = element_text(size = 10, color = "black"),
@@ -690,8 +733,7 @@ windows()
 print(educ_party_pol)
 
 showtext_opts(dpi = 300)
-setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
-mypath1 = "plots/fig4.tiff"
+mypath1 = "plots/fig5.tiff"
 tiff(file = mypath1, width = 2200, height = 1000, res = 300, pointsize = 10, compression = "lzw")
 print(educ_party_pol)
 dev.off()

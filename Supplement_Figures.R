@@ -23,6 +23,7 @@ d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE)
 
 d <- d %>% select(-class)
 
+
 #only keep GSS variables we need
 load(file="Z:/jc3528/OilSpill/CultureNetwork_0312/full_network_03122024.saved")
 
@@ -35,13 +36,6 @@ d = d[, colnames(d)=="year"|colnames(d) %in% nodes] #keep only relevant nodes
 #d <- data.frame(lapply(d, as.numeric))
 str(d)
 length(d)
-
-# Count binary response columns (exactly 2 unique values)
-binary_cols <- sapply(d, function(x) length(unique(x[!is.na(x)])) == 2)
-n_binary <- sum(binary_cols)
-cat("Number of binary response columns:", n_binary, "\n")
-
-
 
 # Normalize all SD-relevant variables to the maximum possible SD scale.
 # A variable rescaled to [0, 1] has a maximum SD of 0.5, so multiplying by 2
@@ -63,77 +57,117 @@ all_issue_vars <- nodes[nodes %in% colnames(d) & !nodes %in% c("year", "educ", "
 d_normalized <- d %>%
   mutate(across(all_of(all_issue_vars), normalize_to_max_sd))
 
-# For each node, compute year-specific SD
-node_sd_by_year <- d_normalized %>%
-  select(year, all_of(all_issue_vars)) %>%
-  group_by(year) %>%
-  summarise(across(all_of(all_issue_vars), ~sd(., na.rm = TRUE)), .groups = "drop") %>%
-  pivot_longer(-year, names_to = "node", values_to = "sd_val")
+# Bootstrap resampling: 500 iterations
+n_bootstrap <- 500
+set.seed(36)
 
-head(node_sd_by_year)
+# Store bootstrap results for each variable by year
+bootstrap_results <- vector("list", n_bootstrap)
 
-# Join with node_tags to get group_tag for each issue
-node_sd_by_group <- node_sd_by_year %>%
-  left_join(node_tags %>% select(node, group_tag), by = "node") %>%
-  filter(!is.na(group_tag) & group_tag != "politic") %>%
-  group_by(year, group_tag) %>%
+cat("Running", n_bootstrap, "bootstrap resamples...\n")
+
+for (b in 1:n_bootstrap) {
+  if (b %% 50 == 0) cat("Bootstrap iteration:", b, "\n")
+  
+  # Resample respondents with replacement for each year
+  d_boot <- d_normalized %>%
+    group_by(year) %>%
+    slice_sample(prop = 1, replace = TRUE) %>%
+    ungroup()
+  
+  # Calculate SD for each variable by year in this bootstrap sample
+  node_sd_by_year_b <- d_boot %>%
+    select(year, all_of(all_issue_vars)) %>%
+    group_by(year) %>%
+    summarise(across(all_of(all_issue_vars), ~sd(., na.rm = TRUE)), .groups = "drop") %>%
+    pivot_longer(-year, names_to = "node", values_to = "sd_val")
+  
+  # Join with node_tags and aggregate by group
+  node_sd_by_group_b <- node_sd_by_year_b %>%
+    left_join(node_tags %>% select(node, group_tag), by = "node") %>%
+    filter(!is.na(group_tag) & group_tag != "politic") %>%
+    group_by(year, group_tag) %>%
+    summarise(
+      avg_sd = mean(sd_val, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      group_tag = case_when(
+        group_tag == "socio-cultural" ~ "Socio-cultural",
+        group_tag == "econ" ~ "Economic Policy",
+        group_tag == "public_policy" ~ "Public Affairs",
+        TRUE ~ group_tag
+      ),
+      bootstrap_id = b
+    ) %>%
+    rename(label = group_tag, value = avg_sd)
+  
+  # Calculate SD for polviews and partyid in this bootstrap
+  polviews_sd_b <- d_boot %>%
+    select(year, polviews) %>%
+    group_by(year) %>%
+    summarise(sd_val = sd(polviews, na.rm = TRUE), .groups = "drop") %>%
+    filter(!is.na(sd_val)) %>%
+    mutate(label = "Ideology", value = sd_val, bootstrap_id = b) %>%
+    select(year, label, value, bootstrap_id)
+  
+  partyid_sd_b <- d_boot %>%
+    select(year, partyid) %>%
+    group_by(year) %>%
+    summarise(sd_val = sd(partyid, na.rm = TRUE), .groups = "drop") %>%
+    filter(!is.na(sd_val)) %>%
+    mutate(label = "Party", value = sd_val, bootstrap_id = b) %>%
+    select(year, label, value, bootstrap_id)
+  
+  # Combine all data for this bootstrap
+  bootstrap_results[[b]] <- bind_rows(
+    node_sd_by_group_b,
+    polviews_sd_b,
+    partyid_sd_b
+  )
+}
+
+# Combine all bootstrap results
+all_bootstrap_sd <- bind_rows(bootstrap_results)
+
+# Calculate mean and SE (SD of bootstrap distribution) for each year/item-pair combination
+node_sd_combined <- all_bootstrap_sd %>%
+  filter(!is.na(label) & !is.na(value)) %>%
+  group_by(year, label) %>%
   summarise(
-    avg_sd = mean(sd_val, na.rm = TRUE),
-    se_sd = sd(sd_val, na.rm = TRUE),
-    n_issues = n(),
+    mean = mean(value, na.rm = TRUE),
+    se = sd(value, na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  mutate(
-    group_tag = case_when(
-      group_tag == "socio-cultural" ~ "Socio-cultural",
-      group_tag == "econ" ~ "Economic Policy",
-      group_tag == "public_policy" ~ "Public Affairs",
-      TRUE ~ group_tag
-    )
-  ) %>%
-  rename(label = group_tag, value = avg_sd) %>%
-  select(year, label, value)
-
-# Calculate SD for polviews and partyid
-polviews_sd <- d_normalized %>%
-  select(year, polviews) %>%
-  group_by(year) %>%
-  summarise(sd_val = sd(polviews, na.rm = TRUE), .groups = "drop") %>%
-  filter(!is.na(sd_val)) %>%
-  mutate(label = "Ideology", value = sd_val) %>%
-  select(year, label, value)
-
-partyid_sd <- d_normalized %>%
-  select(year, partyid) %>%
-  group_by(year) %>%
-  summarise(sd_val = sd(partyid, na.rm = TRUE), .groups = "drop") %>%
-  filter(!is.na(sd_val)) %>%
-  mutate(label = "Party", value = sd_val) %>%
-  select(year, label, value)
-
-# Combine all data
-node_sd_combined <- bind_rows(
-  node_sd_by_group,
-  polviews_sd,
-  partyid_sd
-) %>%
-  filter(!is.na(label) & !is.na(value)) %>%
   mutate(label = factor(label, levels = c("Socio-cultural", "Economic Policy", "Public Affairs", "Party", "Ideology")))
 
 # Apply LOESS smoothing for each label
 node_sd_combined <- node_sd_combined %>%
   group_by(label) %>%
   mutate(
-    value_smooth = predict(loess(value ~ year, span = 0.2, na.action = na.exclude))
+    mean_smooth = predict(loess(mean ~ year, span = 0.2, na.action = na.exclude)),
+    se_smooth = predict(loess(se ~ year, span = 0.2, na.action = na.exclude))
   ) %>%
   ungroup()
 
 # Plot average SD by group_tag over time, including polviews and partyid
 p_sd_by_group <- ggplot(node_sd_combined, aes(x = year, color = label, fill = label)) +
+  geom_ribbon(aes(ymin = mean_smooth - 2 * se_smooth, ymax = mean_smooth + 2 * se_smooth), alpha = 0.12, linewidth = 0, color = NA) +
   geom_line(data = node_sd_combined %>% filter(label %in% c("Socio-cultural", "Economic Policy", "Public Affairs")), 
-            aes(y = value_smooth), linewidth = 1.2) +
+            aes(y = mean_smooth), linewidth = 0.6) +
   geom_line(data = node_sd_combined %>% filter(label %in% c("Party", "Ideology")), 
-            aes(y = value_smooth), linewidth = 1.2) +
+            aes(y = mean_smooth), linewidth = 0.6) +
+  geom_point(data = node_sd_combined, 
+             aes(y = mean), size = 1) +
+  scale_y_continuous(
+    breaks = seq(0.1, 0.55, 0.1),
+    minor_breaks = seq(0.1, 0.55, 0.05),
+    guide = guide_axis(minor.ticks = TRUE),
+    limits = c(0.1, 0.55)) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
   scale_color_manual(values = c(
     "Socio-cultural" = "#f9e858",
     "Economic Policy" = "#008dff",
@@ -152,20 +186,20 @@ p_sd_by_group <- ggplot(node_sd_combined, aes(x = year, color = label, fill = la
        x = "Year", 
        y = expression(Extremism~(sigma)),
        color = "Domain/Variable") +
-  scale_y_continuous(limits = c(0.2, 0.5)) +
-  theme_minimal(base_size = 14, base_family = "Helvetica") +
+  theme_minimal(base_size = 10, base_family = "Helvetica") +
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     legend.position = "bottom",
     plot.title = element_blank(),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 14, color = "black"),
-    axis.text.x = element_text(size = 12, color = "black"),
-    axis.text.y = element_text(size = 12, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
     legend.title = element_blank(),
-    legend.text = element_text(size = 12, color = "black")
+    legend.text = element_text(size = 10, color = "black")
   ) +
   guides(color = guide_legend(override.aes = list(linewidth = 3), nrow = 2), fill = "none")
 
@@ -177,7 +211,6 @@ mypath_sd_group = "plots/figs1.tiff"
 tiff(file = mypath_sd_group, width = 1500, height = 1300, res = 300, pointsize = 10, compression = "lzw")
 print(p_sd_by_group)
 dev.off()
-
 # ====================================================================================================
 # Fig S2 Domain correlation with Demographics over time (using bootstrapped results)
 # ====================================================================================================
@@ -375,9 +408,17 @@ head(domain_political_combined)
 # Create faceted plot with Ideology and Party as panels
 domain_political_plot <- ggplot(domain_political_combined, aes(x = year, color = group_tag, fill = group_tag)) +
   geom_ribbon(aes(ymin = avg_rho_fit - 2 * se_rho_fit, ymax = avg_rho_fit + 2 * se_rho_fit), alpha = 0.2, linewidth = 0, color = NA) +
-  geom_line(aes(y = avg_rho_fit), linewidth = 1) +
-  #geom_point(aes(y = avg_rho), size = 1.5, alpha = 0.6) +
+  geom_line(aes(y = avg_rho_fit), linewidth = 0.6) +
+  geom_point(aes(y = avg_rho), size = 1) +
   facet_wrap(~ political_var, ncol = 2) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+    breaks = seq(0.05, 0.3, 0.05),
+    minor_breaks = seq(0.05, 0.3, 0.025),
+    guide = guide_axis(minor.ticks = TRUE)) +
   labs(x = "Year", y = expression(Correlation~"("*italic(r)*")"), 
        color = "Domain") +
   scale_color_manual(values = c(
@@ -395,14 +436,15 @@ domain_political_plot <- ggplot(domain_political_combined, aes(x = year, color =
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     legend.position = "bottom",
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 14, color = "black"),
-    axis.text.x = element_text(size = 14, color = "black"),
-    axis.text.y = element_text(size = 14, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
     legend.title = element_blank(),
-    legend.text = element_text(size = 14, color = "black"),
-    strip.text = element_text(size = 14, color = "black")
+    legend.text = element_text(size = 10, color = "black"),
+    strip.text = element_text(size = 10, color = "black")
   ) +
   guides(
   color = guide_legend(override.aes = list(linewidth = 3)),
@@ -420,7 +462,7 @@ dev.off()
 
 
 #================================================
-# Figure S4. Plot for centrality of Politics and all Demographics
+# Figure S3. Plot for centrality of Politics and all Demographics
 #================================================
 # Centrality Timetrend Plots
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
@@ -526,19 +568,28 @@ p_betweenness <- summary_long %>%
   geom_line(data = . %>% filter(node_type %in% c("Party", "Ideology")), aes(y = smooth_mean, group = node), size = 0.8) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+  breaks = seq(0, 11000, 2500),
+  minor_breaks = seq(0, 11000, 1250), guide = guide_axis(minor.ticks = TRUE)
+) +
   theme_minimal(base_size = 14, base_family = "Helvetica") +  
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     legend.position = "right",
     legend.title = element_blank(),
-    legend.text = element_text(size = 12, color = "black"),
-    plot.title = element_text(size = 12, face = "bold", hjust = 0),
+    legend.text = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),    
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
-    axis.text.x = element_text(size = 12, color = "black"),
-    axis.title.y = element_text(size = 12, color = "black"),                   
-    axis.text.y = element_text(size = 12, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),                   
+    axis.text.y = element_text(size = 10, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 5, l = 10)
   ) +
   labs(
@@ -556,19 +607,29 @@ p_degree <- summary_long %>%
   geom_line(data = . %>% filter(node_type %in% c("Party", "Ideology")), aes(y = smooth_mean, group = node), size = 0.8) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+  breaks = seq(0, 50, 10),
+  minor_breaks = seq(0, 50, 5),
+  guide = guide_axis(minor.ticks = TRUE)
+  ) +
   theme_minimal(base_size = 14, base_family = "Helvetica") +  
   theme(
     panel.border = element_rect(color = "black", fill = NA, size = 1),
     legend.position = "right",
     legend.title = element_blank(),
-    legend.text = element_text(size = 12, color = "black"),
-    plot.title = element_text(size = 12, face = "bold", hjust = 0),
+    legend.text = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),    
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
-    axis.text.x = element_text(size = 12, color = "black"),
-    axis.title.y = element_text(size = 12, color = "black"),                   
-    axis.text.y = element_text(size = 12, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.title.y = element_text(size = 10, color = "black"),                   
+    axis.text.y = element_text(size = 10, color = "black"),
     plot.margin = margin(t = 5, r = 10, b = 5, l = 10)
   ) +
   labs(
@@ -586,11 +647,10 @@ windows()
 print(p_demo_combined_all)
 
 showtext_opts(dpi = 300)
-mypath1 = "plots/figs5.tiff"
+mypath1 = "plots/figs3.tiff"
 tiff(file = mypath1, width = 1800, height = 1500, res = 300, pointsize = 10, compression = "lzw")
 print(p_demo_combined_all)
 dev.off()
-
 
 
 
@@ -599,7 +659,7 @@ dev.off()
 #============================================================================
 load("pca_summary_500bootstrap.saved") #load pca_sumary
 
-# Fig S3 Eigenvalues over time
+# Fig S4 Eigenvalues over time
 eigen_long <- pca_summary %>%
   select(year, starts_with("eigenvalue")) %>%
   pivot_longer(cols = -year, names_to = c("pc", ".value"),
@@ -619,6 +679,14 @@ p1 <- ggplot(eigen_long, aes(x = year, y = mean, color = pc, fill = pc)) +
   geom_point(size = 1, alpha = 0.6) +
   geom_line(aes(y = mean_fit), linewidth = 0.6) +
   labs(x = "Year", y = "Eigenvalue", color = "") +
+  scale_x_continuous(
+    breaks = seq(1970, 2030, 10),
+    minor_breaks = seq(1970, 2030, 5),
+    guide = guide_axis(minor.ticks = TRUE)) +
+  scale_y_continuous(
+    breaks = seq(5, 25, 5),
+    minor_breaks = seq(0, 30, 2.5),
+    guide = guide_axis(minor.ticks = TRUE)) +
   scale_color_manual(values = c("PC1" = "#d83034", "PC2" = "#000000")) +
   scale_fill_manual(values = c("PC1" = "#d83034", "PC2" = "#000000")) +
   theme_minimal(base_size = 10, base_family = "Helvetica") +
@@ -630,6 +698,7 @@ p1 <- ggplot(eigen_long, aes(x = year, y = mean, color = pc, fill = pc)) +
     plot.title = element_text(size = 10, face = "bold", hjust = 0),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 10, color = "black"),
     axis.text.x = element_text(size = 10, color = "black"),
@@ -645,3 +714,5 @@ print(p1)
 tiff("plots/figs4.tiff", width = 1500, height = 1200, res = 300, pointsize = 14, compression = "lzw")
 print(p1)
 dev.off()
+
+

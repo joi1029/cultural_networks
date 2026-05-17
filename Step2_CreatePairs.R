@@ -50,3 +50,8 @@ for(ye in years) { #loop through each year individually
 }
 #result in a vector of valid belief pairs
 save(pairs, file="all_pairs_0312.saved")
+
+
+load(file = "Z:/jc3528/OilSpill/CultureNetwork_0312/all_pairs_0204_wdemo.saved") #vector of valid belief pairs
+
+head(pairs)
