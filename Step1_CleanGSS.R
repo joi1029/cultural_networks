@@ -8,7 +8,7 @@ library(tidyr)
 library(dplyr)
 library(foreign)
 
-# read in stata file of GSS
+# Read in stata file of GSS
 d=read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo.dta") #Stata file with all GSS varables including demographics
 d <- as.data.frame(lapply(d, as.vector))  # Strip all haven attributes
 d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE) 

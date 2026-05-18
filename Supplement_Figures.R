@@ -20,8 +20,8 @@ node_tags <- read.csv("Z:/jc3528/OilSpill/Sequence_Analysis/node_tags_processed.
 d <- read_dta("Z:/jc3528/OilSpill/Data/GSS_Recoded2024_0204_withdemo_logtransformed.dta")
 d <- as.data.frame(lapply(d, as.vector))  # Strip all haven attributes
 d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE) 
-
-d <- d %>% select(-class)
+class <- d%>% select(class)
+d <- d %>% select(-class) 
 
 
 #only keep GSS variables we need
@@ -564,8 +564,8 @@ p_betweenness <- summary_long %>%
   filter(metric == "betweenness") %>%
   ggplot(aes(x = year, color = node_type, fill = node_type)) +
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
-  geom_line(data = . %>% filter(!(node_type %in% c("Party", "Ideology"))), aes(y = smooth_mean, group = node), size = 0.8) +
-  geom_line(data = . %>% filter(node_type %in% c("Party", "Ideology")), aes(y = smooth_mean, group = node), size = 0.8) +
+  geom_line(data = . %>% filter(!(node_type %in% c("Party", "Ideology"))), aes(y = smooth_mean, group = node), size = 0.6) +
+  geom_line(data = . %>% filter(node_type %in% c("Party", "Ideology")), aes(y = smooth_mean, group = node), size = 0.6) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
   scale_x_continuous(
@@ -603,8 +603,8 @@ p_degree <- summary_long %>%
   filter(metric == "degree") %>%
   ggplot(aes(x = year, color = node_type, fill = node_type)) +
   geom_ribbon(aes(ymin = smooth_lower, ymax = smooth_upper), alpha = 0.2, color = NA) +
-  geom_line(data = . %>% filter(!(node_type %in% c("Party", "Ideology"))), aes(y = smooth_mean, group = node), size = 0.8) +
-  geom_line(data = . %>% filter(node_type %in% c("Party", "Ideology")), aes(y = smooth_mean, group = node), size = 0.8) +
+  geom_line(data = . %>% filter(!(node_type %in% c("Party", "Ideology"))), aes(y = smooth_mean, group = node), size = 0.6) +
+  geom_line(data = . %>% filter(node_type %in% c("Party", "Ideology")), aes(y = smooth_mean, group = node), size = 0.6) +
   scale_color_manual(values = demo_colors) +
   scale_fill_manual(values = demo_colors) +
   scale_x_continuous(
@@ -645,7 +645,6 @@ p_demo_combined_all <- (p_betweenness / p_degree) +
 
 windows()
 print(p_demo_combined_all)
-
 showtext_opts(dpi = 300)
 mypath1 = "plots/figs3.tiff"
 tiff(file = mypath1, width = 1800, height = 1500, res = 300, pointsize = 10, compression = "lzw")
