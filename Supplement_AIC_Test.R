@@ -10,7 +10,7 @@ getwd()
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 
 # =====================================================================
-# PART 1: NETWORK-LEVEL AIC TEST
+# Part 1: Network Level AIC Test
 load("Dens_full.saved")                                    # Density matrix
 load("max_kcore_summary_bootstrapped_garas.saved")        # Max k-core summary
 load("yearlist.saved")
@@ -51,11 +51,9 @@ fit_aic_comparison <- function(data, metric_name, year_col = "year", value_col =
   aic_quad <- AIC(model_quad)
   bic_quad <- BIC(model_quad)
   
-  # Calculate AIC differences
   aic_diff <- aic_linear - aic_quad  # positive means quadratic is better
   bic_diff <- bic_linear - bic_quad
   
-  # Calculate likelihood ratio
   lr_test <- anova(model_linear, model_quad)
   
   # Extract R-squared values
@@ -64,7 +62,7 @@ fit_aic_comparison <- function(data, metric_name, year_col = "year", value_col =
   adj_r2_linear <- summary(model_linear)$adj.r.squared
   adj_r2_quad <- summary(model_quad)$adj.r.squared
   
-  # Determine better model (lower AIC is better)
+  # Label the beter model
   better_model_aic <- ifelse(aic_quad < aic_linear, "Quadratic", "Linear")
   better_model_bic <- ifelse(bic_quad < bic_linear, "Quadratic", "Linear")
   
@@ -112,7 +110,7 @@ kcore_df_clean <- kcore_df %>%
 kcore_aic <- fit_aic_comparison(kcore_df_clean, "Max_K-core", year_col = "year", value_col = "mean_value")
 
 
-# Create summary table for network-level metrics
+# Create summary table
 network_aic_summary <- data.frame(
   Metric = c("Density", "Max K-core"),
   Linear_AIC = c(round(density_aic$aic_linear, 3), round(kcore_aic$aic_linear, 3)),
@@ -132,7 +130,7 @@ save(kcore_aic, file = "kcore_aic_results.RData")
 
 
 # =====================================================================
-# PART 2: NODE-LEVEL AIC TEST
+# Part 2: Node-level AIC Test
 # Load node-level metrics
 load("bootstrap_summary_stats_500_0312.RData")  # node_summary data.frame
 
@@ -305,8 +303,8 @@ save(node_aic_results, file = "node_aic_results_detailed.RData")
 
 
 
-
-# Extract results for polviews and partyid nodes
+# ======================================================================
+# Table S2: Extract results for polviews and partyid nodes particularly
 target_nodes <- c("polviews", "partyid")
 target_metrics <- c("betweenness", "degree")
 
