@@ -101,7 +101,7 @@ n_cores <- 4
 cl <- makeCluster(n_cores)
 
 # Export necessary objects to cluster
-clusterExport(cl, c("r", "nodes", "yearlist", "process_bootstrap", "boot_preds"), envir = environment())
+clusterExport(cl, c("r", "nodes", "yearlist", "process_bootstrap", "filtered_results"), envir = environment())
 clusterEvalQ(cl, {
   library(igraph)
   library(dplyr)

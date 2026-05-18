@@ -1,8 +1,10 @@
+rm(list = ls())
+
+# Change working directory as needed
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 library(dplyr)
 library(pbapply)
 library(parallel)
-rm(list = ls())
 
 
 # Step 1. Calculate 2SD thresholds for each j in each year, over all bootstrap distributions ================
@@ -44,11 +46,6 @@ load("all_thresholds_0312_500.saved")  # loads 'all_thresholds' dataframe
 load("bootstrapped_pred_corrs_1-500_0312.saved")  # loads 'filtered_results' - list of dataframes
 length(results)
 
-
-test <- all_thresholds |>
-  filter(j=="abdefect_age") |>
-  arrange(year) 
-test
 
 n_cores <- 5
 cl <- makeCluster(n_cores)

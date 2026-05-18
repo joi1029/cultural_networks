@@ -1,7 +1,7 @@
 #Generating measures of network time trends using bootstrapped data 
 # Density, Kcore
-
 rm(list=ls())
+
 getwd()
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 

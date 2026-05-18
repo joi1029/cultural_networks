@@ -1,4 +1,5 @@
 #Code to model and impute correlations in bootstrapped samples
+# Change workingn directory as needed
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 getwd()
 rm(list=ls())

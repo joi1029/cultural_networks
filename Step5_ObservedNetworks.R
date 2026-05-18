@@ -1,21 +1,16 @@
 #Code to turn observed correlations into networks for each year
-
-
-require(igraph)
-
-
 rm(list=ls())
+
+library(igraph)
 
 #Change the working directory as needed
 setwd("Z:/jc3528/OilSpill/CultureNetwork0312")
 getwd()
 
-
-load(file="yearlist.saved")
+# Load required data
 load(file = "modelinput_0312.saved")
 load("corr_predictions_model_0312.saved") #called e in the file
 load("yearlist.saved")
-
 
 
 ###############################################
