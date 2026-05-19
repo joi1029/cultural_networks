@@ -284,6 +284,7 @@ export_network_by_year <- function(year, networks, yearlist, node_tags, persiste
 # load("networks_0312_filtered_by_se.saved")  # loads 'networks'
 # load("yearlist.saved")                       # loads 'yearlist'
 # node_tags <- read.csv("Z:/jc3528/OilSpill/Sequence_Analysis/node_tags_processed.csv")
+# Export graphml objects for visualization in Gephi
 
 export_network_by_year(1985, networks, yearlist, node_tags, persistent_top_nodes)
 export_network_by_year(2024, networks, yearlist, node_tags, persistent_top_nodes)

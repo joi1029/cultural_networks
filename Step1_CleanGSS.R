@@ -26,4 +26,4 @@ summary(d$size)
 
 ncol(d) #1366 columns, including 'year'
 
-write.dta(d,file="GSS_Recoded2024_0204_withdemo_logtransformed2.dta")
+write.dta(d,file="GSS_Recoded2024_0204_withdemo_logtransformed.dta")
