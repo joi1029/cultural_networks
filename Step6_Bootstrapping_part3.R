@@ -42,7 +42,7 @@ process_bootstrap_rep <- function(i) {
   e$x = r$x[match(e$j, r$j)]
   e$y = r$y[match(e$j, r$j)]
   
-  e$weight = ifelse(is.na(e$c_obs), e$c_est, e$c_obs) #baseline condition
+  e$weight = ifelse(is.na(e$c_obs), e$c_est, e$c_obs)
   
   e$weight[e$weight<0]=0 #bound weights between 0 and 1
   e$weight[e$weight>1]=1
@@ -202,7 +202,6 @@ process_one_bootstrap <- function(i) {
   e$weight[e$weight < 0] <- 0
   e$weight[e$weight > 1] <- 1
 
-  # Fast base-R split instead of tidyr::separate
   e$x <- sub("_.*", "", e$j)
   e$y <- sub(".*_", "", e$j)
   
@@ -325,7 +324,7 @@ save(all_bootstrap_summaries, file = "all_bootstrap_summaries_combined.saved") #
 save(all_bootstrap_node_kcores, file = "all_bootstrap_node_kcores_combined.saved")  # node-level information and kcore
 
 
-#=== Mean and SE ===
+# Summary mean and s.e. of kcore acros bootstraps by year
 max_kcore_summary_bootstrapped <- all_bootstrap_summaries %>%
   group_by(year) %>%
   dplyr::summarise(

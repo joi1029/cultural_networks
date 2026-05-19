@@ -18,7 +18,7 @@ d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE)
 d$realinc <- log(d$realinc)
 summary(d$realinc)
 
-# log size of place
+# Take log of size of place
 d$size <- ifelse(d$size == 0, 0.5, d$size)
 d$size <- d$size * 1000
 d$size <- log(d$size)
@@ -26,4 +26,4 @@ summary(d$size)
 
 ncol(d) #1366 columns, including 'year'
 
-write.dta(d,file="GSS_Recoded2024_0204_withdemo_logtransformed.dta")
+write.dta(d,file="GSS_Recoded2024_0204_withdemo_logtransformed2.dta")

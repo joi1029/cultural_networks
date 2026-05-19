@@ -18,6 +18,7 @@ d <- data.frame(lapply(d, as.numeric), stringsAsFactors = FALSE)
 years <- sort(unique(d$year))
 
 
+ncol(d) #1366 columns, including 'year'
 #+=======================================================
 #Looping through and gathering correlations
 

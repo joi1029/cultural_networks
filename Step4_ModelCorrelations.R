@@ -50,7 +50,6 @@ save(r, file="modelinput_0312.saved")
 
 load("Z:/jc3528/OilSpill/CultureNetwork_0312/modelinput_0312.saved")
 
-
 #=============================================================================================
 #save a list of years for convenient use later
 yearlist = unique(r$year)

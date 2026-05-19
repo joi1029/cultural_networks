@@ -10,6 +10,8 @@ library(tidyr)
 library(pbapply)
 library(parallel)
 
+head(d)
+
 # set work directory
 getwd()
 setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
@@ -152,3 +154,21 @@ calculate_bootstrap_summary <- function(node_metrics_list) {
 node_summary <- calculate_bootstrap_summary(node_metrics_list)
 
 save(node_summary, file = "bootstrap_summary_stats_500_0312.RData")
+
+
+
+
+
+sum(filtered_results[[1]]$c_obs > 0, na.rm = TRUE)
+sum(unique(r$j) %in% unique(filtered_results[[1]]$j))
+ls()
+
+sum(results[[1]]$c_obs > 0, na.rm = TRUE)
+sum(unique(r$j) %in% unique(results[[1]]$j))
+ls()
+
+network_1972 <- subset(results[[1]], year == 2000)
+sum(network_1972$c_est > 0, na.rm = TRUE)
+
+network_1972 <- subset(filtered_results[[1]], year == 2000)
+sum(network_1972$c_est > 0, na.rm = TRUE)

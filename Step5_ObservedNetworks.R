@@ -4,10 +4,10 @@ rm(list=ls())
 library(igraph)
 
 #Change the working directory as needed
-setwd("Z:/jc3528/OilSpill/CultureNetwork0312")
+setwd("Z:/jc3528/OilSpill/CultureNetwork_0312")
 getwd()
 
-# Load required data
+# Load required data files
 load(file = "modelinput_0312.saved")
 load("corr_predictions_model_0312.saved") #called e in the file
 load("yearlist.saved")
@@ -125,7 +125,7 @@ head(all_thresholds)
 
 #=======================================================================================
 # Method 2: use edge-specific bootstrap thresholds.
-# Each edge pair has edge-specific thresholds calculated from 500 bootstrap samples.
+# Each edge pair has edge-specific thresholds calculated from 500 bootstrap samples in Step6_Bootstrapping_part2.5_Filter_by_SE.R
 
 # Load pre-computed thresholds
 load("all_thresholds_0312_500.saved")
@@ -194,7 +194,7 @@ export_network_by_year <- function(year, networks, yearlist, node_tags, persiste
     "polviews" = "Ideology",
     "race" = "Race",
     "age" = "Age",
-    "educ" = "Education",
+    "educ" = "Education"
   )
   
   node_label_lookup <- setNames(node_tags$group_tag, node_tags$node)
@@ -285,5 +285,5 @@ export_network_by_year <- function(year, networks, yearlist, node_tags, persiste
 # load("yearlist.saved")                       # loads 'yearlist'
 # node_tags <- read.csv("Z:/jc3528/OilSpill/Sequence_Analysis/node_tags_processed.csv")
 
-export_network_by_year(1996, networks, yearlist, node_tags, persistent_top_nodes)
+export_network_by_year(1985, networks, yearlist, node_tags, persistent_top_nodes)
 export_network_by_year(2024, networks, yearlist, node_tags, persistent_top_nodes)

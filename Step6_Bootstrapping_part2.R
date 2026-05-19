@@ -34,10 +34,10 @@ predict_correlations = function(i) {
             load(file = file_path)
             
             # Handle both naming conventions (b_corrs or b_corrs_filtered)
-            if (exists("b_corrs_filtered")) {
-                b_corrs <- b_corrs_filtered
-                rm(b_corrs_filtered)
-            }
+            # if (exists("b_corrs_filtered")) {
+            #     b_corrs <- b_corrs_filtered
+            #     rm(b_corrs_filtered)
+            # }
             
             b_corrs[[i]]$year = y
             bc = rbind(bc, b_corrs[[i]])
